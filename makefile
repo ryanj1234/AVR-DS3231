@@ -79,7 +79,9 @@ OBJDIR = .
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c i2c.c ../ssd1306/ssd1306.c ../ssd1306/font.c
+SRC = $(TARGET).c ds3231.c ds3231_access.c 
+SRC += ../fluery-i2c/twimaster.c
+SRC += ../uart/uart.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)
@@ -113,7 +115,7 @@ DEBUG = dwarf-2
 #     Each directory must be seperated by a space.
 #     Use forward slashes for directory separators.
 #     For a directory that has spaces, enclose it in quotes.
-EXTRAINCDIRS =
+EXTRAINCDIRS = ../fluery-i2c/ ../ssd1306/ ../uart/
 
 
 # Compiler flag to set the C Standard level.
@@ -154,7 +156,7 @@ CFLAGS += -funsigned-bitfields
 CFLAGS += -fpack-struct
 CFLAGS += -fshort-enums
 CFLAGS += -Wall
-# CFLAGS += -Werror
+CFLAGS += -Werror
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -mshort-calls
 CFLAGS += -fno-unit-at-a-time
@@ -213,9 +215,8 @@ PRINTF_LIB_MIN = -Wl,-u,vfprintf -lprintf_min
 PRINTF_LIB_FLOAT = -Wl,-u,vfprintf -lprintf_flt
 
 # If this is left blank, then it will use the Standard printf version.
-# PRINTF_LIB = $(PRINTF_LIB_FLOAT)
-PRINTF_LIB = $(PRINTF_LIB_MIN)
-#PRINTF_LIB = $(PRINTF_LIB_FLOAT)
+PRINTF_LIB = $(PRINTF_LIB_FLOAT)
+# PRINTF_LIB = $(PRINTF_LIB_MIN)
 
 
 # Minimalistic scanf version
