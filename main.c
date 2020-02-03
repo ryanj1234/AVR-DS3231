@@ -1,94 +1,56 @@
 #include <avr/io.h>
 #include <util/delay.h>
-#include <stdio.h>
+#include <avr/pgmspace.h>
+#include <avr/interrupt.h>
 #include "ds3231.h"
-#include "ssd1306.h"
 #include "uart.h"
+#include "rtc.h"
+#include "rtc_print.h"
 
-enum weekday
+void configure_int0(void)
 {
-    Monday = 1,
-    Tuesday = 2,
-    Wednesday = 3,
-    Thursday = 4,
-    Friday = 5,
-    Saturday = 6,
-    Sunday = 7
-};
-
-enum month
-{
-    January = 1,
-    February = 2,
-    March = 3,
-    April = 4,
-    May = 5,
-    June = 6,
-    July = 7,
-    August = 8,
-    September = 9,
-    October = 10,
-    November = 11,
-    December = 12
-};
-
-void pretty_print(char * buf, RTC * time)
-{
-    static char* months[12] = {
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec"
-    };
-
-    static char * wdays[7] = {
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-        "Sunday"
-    };
-    sprintf(buf, "%s, %s %d, %d %02d:%02d:%02d\n", wdays[time->wday-1], months[time->month-1], time->mday, time->year, time->hour, time->min, time->sec);
+    DDRD &= ~(1 << PIND2);
+    PORTD |= (1 << PIND2);
+    EICRA |= (1 << ISC01); // trigger on rising edge
+    EIMSK |= (1 << INT0);  // enable int0 interrupts
 }
 
-void compact_print(char * buf, RTC * time)
+volatile uint8_t update_time = 0;
+ISR(INT0_vect)
 {
-    sprintf(buf, "%u/%u/%u %02u:%02u:%02u\n", time->year, time->month, time->mday, time->hour, time->min, time->sec);
+    update_time = 1;
 }
 
 int main(void)
 {
-    ds3231_init();
     uart_init(9600);
+    
+    ds3231_dev ds3231 = get_ds3213();
+
+    /** alarm time */
+    RTC atime;
+    atime.sec = 0;
+    ds3231_interrupt_enable(&ds3231);
+    ds3231_enable_alarm1(&ds3231);
+
+    ds3231_clear_alarm1_flag(&ds3231);
+    configure_int0();
+    sei();
 
     RTC rtc;
-    // RTC stime;
-    // stime.sec = 0;
-    // stime.min = 5;
-    // stime.hour = 18;
-    // stime.mday = 1;
-    // stime.wday = (uint8_t)saturday;
-    // stime.month = (uint8_t)February;
-    // stime.year = 2020;
-    // rtc_settime(&stime);
-
     char buf[32];
     while(1)
     {
-        rtc_gettime(&rtc);
+        ds3231_gettime(ds3231, &rtc);
         compact_print(buf, &rtc);
         uart_puts(buf);
 
-        _delay_ms(250);
+        ds3231_clear_alarm1_flag(&ds3231);
+        atime.sec = rtc.sec + 5;
+        if(atime.sec > 59) { atime.sec -= 60; }
+        ds3231_set_alarm1(&ds3231, &atime, match_seconds);
+
+        while(!update_time) {}
+        update_time = 0;
     }
 }

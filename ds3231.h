@@ -2,37 +2,116 @@
 #define __DS3231_h__
 
 #include <avr/io.h>
+#include "rtc.h"
+
+#define DS3231_STAT_OK      0
+#define DS3231_STAT_FAIL    1
 
 typedef struct {
-	uint16_t	year;	/* 2000..2099 */
-	uint8_t		month;	/* 1..12 */
-	uint8_t		mday;	/* 1.. 31 */
-	uint8_t		wday;	/* 1..7 */
-	uint8_t		hour;	/* 0..23 */
-	uint8_t		min;	/* 0..59 */
-	uint8_t		sec;	/* 0..59 */
-} RTC;
+    uint8_t mode;           /* 12/24 hour mode */
+    uint8_t ctrl;           /* Control register 0x0E */
+    uint8_t ctrl_stat;      /* Control/Status register 0x0F */
+    uint8_t dev_status;     /* Device status */
+} ds3231_dev;
 
-int rtc_init(void);                 /* Initialize RTC */
-int rtc_gettime(RTC*);				/* Get time */
-int rtc_settime(const RTC*);		/* Set time */
+enum alarm_mask {
+    match_seconds = 0x01,
+    match_minutes = 0x02,
+    match_hours = 0x04,
+    match_day = 0x08
+};
 
-void ds3231_init(void);
+/**
+ * Initialize DS3231 with default settings
+ */
+extern ds3231_dev get_ds3213(void);
 
-void ds3231_read_time(uint8_t* hr, uint8_t* min, uint8_t* sec);
-void ds3231_set_time(uint8_t hr, uint8_t min, uint8_t sec);
+/**
+ * Read current time from DS3231
+ * 
+ * @return  1 if success, else 0
+ */
+extern uint8_t ds3231_gettime(ds3231_dev dev, RTC* rtc);
 
-void ds3231_set_12hr_mode(void);
-void ds3231_set_24hr_mode(void);
-void ds3231_disable_32k(void);
-void ds3231_enable_32k(void);
-void ds3231_disable_alarm1(void);
-void ds3231_enable_alarm1(void);
-void ds3231_disable_alarm2(void);
-void ds3231_enable_alarm2(void);
-void ds3231_interrupt_disable(void);
-void ds3231_interrupt_enable(void);
+/**
+ * Set time in DS3231
+ * 
+ * @return 1 if success, else 0
+ */
+extern uint8_t ds3231_settime(ds3231_dev dev, const RTC* time);
 
-void print_12hr_time(char* buf, uint8_t hr, uint8_t min, uint8_t sec);
+/**
+ * Set the time value for alarm 1 in the DS3231
+ * 
+ * Mask determines which values in the alarm are compared for a match. If all
+ * are zero, match will occur every second. Otherwise, set to 1 to force a match
+ * compare for that particular value.
+ */
+extern void ds3231_set_alarm1(ds3231_dev * dev, RTC * time, uint8_t mask);
+
+/**
+ * Set the time value for alarm 2 in the DS3231
+ * 
+ * Alarm 2 differs from alarm 1 in that it does not have a seconds value.
+ * 
+ * Mask determines which values in the alarm are compared for a match. If all
+ * are zero, match will occur every minute. Otherwise, set to 1 to force a match
+ * compare for that particular value.
+ */
+extern void ds3231_set_alarm2(ds3231_dev * dev, RTC * time, uint8_t mask);
+
+/**
+ * Disable the 32Khz oscillator output
+ */
+extern void ds3231_disable_32k(ds3231_dev*);
+
+/**
+ * Enable the 32kHz oscillator output
+ */
+extern void ds3231_enable_32k(ds3231_dev*);
+
+/**
+ * Disable alarm1
+ */
+extern void ds3231_disable_alarm1(ds3231_dev*);
+
+/**
+ * Enable alarm1
+ */
+extern void ds3231_enable_alarm1(ds3231_dev*);
+
+/**
+ * Disable alarm2
+ */
+extern void ds3231_disable_alarm2(ds3231_dev*);
+
+/**
+ * Enable alarm2
+ */
+extern void ds3231_enable_alarm2(ds3231_dev*);
+
+/**
+ * Disable interrupts
+ */
+extern void ds3231_interrupt_disable(ds3231_dev*);
+
+/**
+ * Enable interrupts
+ */
+extern void ds3231_interrupt_enable(ds3231_dev*);
+
+/**
+ * Clear alarm flag. 
+ * 
+ * This must be done to restore INT pin to its non triggered state
+ */
+extern void ds3231_clear_alarm1_flag(ds3231_dev *);
+
+/**
+ * Clear alarm flag. 
+ * 
+ * This must be done to restore INT pin to its non triggered state
+ */
+extern void ds3231_clear_alarm2_flag(ds3231_dev *);
 
 #endif

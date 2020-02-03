@@ -79,7 +79,7 @@ OBJDIR = .
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = $(TARGET).c ds3231.c ds3231_access.c 
+SRC = $(TARGET).c ds3231.c ds3231_access.c rtc_print.c
 SRC += ../fluery-i2c/twimaster.c
 SRC += ../uart/uart.c
 
@@ -156,7 +156,7 @@ CFLAGS += -funsigned-bitfields
 CFLAGS += -fpack-struct
 CFLAGS += -fshort-enums
 CFLAGS += -Wall
-CFLAGS += -Werror
+# CFLAGS += -Werror
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -mshort-calls
 CFLAGS += -fno-unit-at-a-time
